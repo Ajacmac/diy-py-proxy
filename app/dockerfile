@@ -16,6 +16,4 @@ RUN chmod 644 /usr/local/share/ca-certificates/cockroachdb.cert && update-ca-cer
 ADD cert.crt /root/.postgresql/root.crt
 
 # command to run on container start
-#ENV DATABASE_URL postgresql://acadia:nokK7GX2HDePJwSXocspeQ@acadia-uni-4762.g8z.cockroachlabs.cloud:26257/acadia?sslmode=verify-full
-ENV DATABASE_URL postgresql://acadia:nokK7GX2HDePJwSXocspeQ@127.0.0.1:7500/acadia
 CMD [ "python", "./main.py" ]
