@@ -1,12 +1,12 @@
-import asyncio
-import sys
+import asyncio, sys, ssl
 
 LISTEN_PORT = 7500
 #DST_PORT = 26257
 #DST_HOST = "acadia-uni-4762.g8z.cockroachlabs.cloud"
 
 DST_PORT = 443
-DST_HOST = "www.apache.org"
+DST_HOST = "wikipedia.com"
+#DST_HOST = "neverssl.com"
 
 # TODO: How do I account for the ?sslmode=verify-full
 # TODO: How do I specify that the connection to the server is TLS at all? 
@@ -17,25 +17,37 @@ DST_HOST = "www.apache.org"
 
 # check whether CockroachDB supports LISTEN/NOTIFY (also, figure out what that even is)
 
+# FIXME: Get GPT-4 to generate textbook quality explanation of implementing TLS on this code example
+# pass in 
+# - this code
+# - python asyncio docs - everything that even might be relevant
+# - the ssl package docs - everything that even might be relevant
+# - the source code for the relevant sections of both the asyncio and ssl packages
+
 async def pipe(reader, writer):
     try:
         while not reader.at_eof():
-            writer.write(await reader.read(2048))
+            data = await reader.read(2048)
+            print(f"Received {data!r}")
+            writer.write(data)
     finally:
         writer.close()
 
 async def handle_client(client_reader, client_writer):
     try:
         # connect to database server
+        ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        ssl_context.check_hostname = True
         server_reader, server_writer = await asyncio.open_connection(
-            DST_HOST, DST_PORT)
+            DST_HOST, DST_PORT, ssl=ssl_context)
         print("Connected to server")
         pipe1 = pipe(client_reader, server_writer)
         pipe2 = pipe(server_reader, client_writer)
         await asyncio.gather(pipe1, pipe2)
-    except:
+    except Exception as e:
         # printing the error message
         print(f"Error connecting to server: {sys.exc_info()[0]}")
+        print(f"{e}")
     finally:
         print("Closing connection")
         client_writer.close()
@@ -50,5 +62,6 @@ async def main():
         pass
 
     server.close()
+    await server.wait_closed()
 
 asyncio.run(main())
